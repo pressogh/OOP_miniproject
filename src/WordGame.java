@@ -1,18 +1,26 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.Vector;
 
 public class WordGame extends JFrame {
     Vector<Word> wordVector = new Vector<>();
     private GamePanel panel = new GamePanel();
     private UserCharacter user = new UserCharacter();
+    JTextField jtf = new JTextField();
 
     public WordGame () {
         setTitle("WordGame");
         setSize(800, 500);
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setContentPane(panel);
+        Container c =  getContentPane();
+        c.add(panel, BorderLayout.CENTER);
+
+        jtf.setSize(800, 30);
+        jtf.addActionListener(new TextInputListener());
+        c.add(jtf, BorderLayout.SOUTH);
 
         wordVector.add(new Word("Hello", (int) (Math.random() * 800), 0));
         wordVector.add(new Word("World", (int) (Math.random() * 800), 0));
@@ -53,7 +61,6 @@ public class WordGame extends JFrame {
                     else if (user.x < item.x) {
                         item.x -= 3;
                     }
-
                     try {
                         sleep(10);
                     } catch (InterruptedException e) {
@@ -61,6 +68,15 @@ public class WordGame extends JFrame {
                     }
                 }
             }
+        }
+    }
+
+    class TextInputListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            String text = jtf.getText();
+            System.out.println(text);
+            jtf.setText("");
         }
     }
 
@@ -79,12 +95,13 @@ class Word {
         this.word = word;
         this.x = x;
         this.y = y;
-        this.item = Math.random() > 0.7 ? "Life" : "None";
+        this.item = Math.random() > 0.1 ? "Life" : "None";
         this.speed = (int) (Math.random() * 9) + 1;
     }
 
     public void draw(Graphics g) {
-        g.setColor(Color.BLACK);
+        if (item.equals("None")) g.setColor(Color.GREEN);
+        else g.setColor(Color.BLACK);
         g.drawString(word, x, y);
     }
 }
