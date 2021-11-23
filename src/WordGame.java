@@ -52,14 +52,20 @@ public class WordGame extends JFrame {
         @Override
         public void run() {
             while (true) {
-                for (Word item : wordVector) {
-                    item.y += item.speed;
+                for (int i = 0; i < wordVector.size(); i++) {
+                    wordVector.get(i).y += wordVector.get(i).speed;
 
-                    if (user.x > item.x) {
-                        item.x += 3;
+                    if (Math.abs(user.y - wordVector.get(i).y) > 0) {
+                        wordVector.get(i).x += (user.x - wordVector.get(i).x) / Math.abs(user.y - wordVector.get(i).y);
                     }
-                    else if (user.x < item.x) {
-                        item.x -= 3;
+
+                    if ((wordVector.get(i).x <= user.x - 15 && wordVector.get(i).x >= user.x + 15) || wordVector.get(i).y >= user.y) {
+                        // wordVector에서 item을 remove하면 word가 이동하는 속도가 바뀌게 됨
+                        // 따라서 wordVector에서 item을 삭제하지 않는 방법으로 변경
+                        if (wordVector.get(i).word.equals("")) continue;
+
+                        wordVector.get(i).word = "";
+                        user.life--;
                     }
                     try {
                         sleep(10);
@@ -75,7 +81,16 @@ public class WordGame extends JFrame {
         @Override
         public void actionPerformed(ActionEvent e) {
             String text = jtf.getText();
-            System.out.println(text);
+
+            for (Word item : wordVector) {
+                if (item.word.equals(text)) {
+                    if (!item.item.equals("Life") && user.life < 3) {
+                        user.life++;
+                    }
+                    item.word = "";
+                }
+            }
+            System.out.println("Life " + user.life);
             jtf.setText("");
         }
     }
@@ -96,7 +111,7 @@ class Word {
         this.x = x;
         this.y = y;
         this.item = Math.random() > 0.1 ? "Life" : "None";
-        this.speed = (int) (Math.random() * 9) + 1;
+        this.speed = (int) (Math.random() * 4) + 1;
     }
 
     public void draw(Graphics g) {
@@ -112,7 +127,7 @@ class UserCharacter {
     int life;
     public UserCharacter() {
         this.x = 400;
-        this.y = 400;
+        this.y = 350;
         this.width = 30;
         this.height = 30;
         this.life = 3;
@@ -121,5 +136,10 @@ class UserCharacter {
     public void draw(Graphics g) {
         g.setColor(Color.WHITE);
         g.fillOval(x, y, width, height);
+
+        g.setColor(Color.RED);
+        for (int i = 0; i < life; i++) {
+            g.fillOval(x + (i < (life / 2) ? -1 * 20 * i : 20 * i) - 15, y + 50, 15, 15);
+        }
     }
 }
