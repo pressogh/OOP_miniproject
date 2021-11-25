@@ -22,14 +22,14 @@ public class WordGame extends JFrame {
         jtf.addActionListener(new TextInputListener());
         c.add(jtf, BorderLayout.SOUTH);
 
-        wordVector.add(new Word("Hello", (int) (Math.random() * 800), 0));
-        wordVector.add(new Word("World", (int) (Math.random() * 800), 0));
-        wordVector.add(new Word("Java", (int) (Math.random() * 800), 0));
-        wordVector.add(new Word("C++", (int) (Math.random() * 800), 0));
-        wordVector.add(new Word("Python", (int) (Math.random() * 800), 0));
-        wordVector.add(new Word("Javascript", (int) (Math.random() * 800), 0));
-        wordVector.add(new Word("OOP", (int) (Math.random() * 800), 0));
-        wordVector.add(new Word("PP", (int) (Math.random() * 800), 0));
+        wordVector.add(new Word("Hello", (int) (Math.random() * 800), (int) (Math.random() * 100)));
+        wordVector.add(new Word("World", (int) (Math.random() * 800), (int) (Math.random() * 100)));
+        wordVector.add(new Word("Java", (int) (Math.random() * 800), (int) (Math.random() * 100)));
+        wordVector.add(new Word("C++", (int) (Math.random() * 800), (int) (Math.random() * 100)));
+        wordVector.add(new Word("Python", (int) (Math.random() * 800), (int) (Math.random() * 100)));
+        wordVector.add(new Word("Javascript", (int) (Math.random() * 800), (int) (Math.random() * 100)));
+        wordVector.add(new Word("OOP", (int) (Math.random() * 800), (int) (Math.random() * 100)));
+        wordVector.add(new Word("PP", (int) (Math.random() * 800), (int) (Math.random() * 100)));
 
         WordMoveThread wmt = new WordMoveThread();
         wmt.start();
@@ -56,7 +56,7 @@ public class WordGame extends JFrame {
                     wordVector.get(i).y += wordVector.get(i).speed;
 
                     if (Math.abs(user.y - wordVector.get(i).y) > 0) {
-                        wordVector.get(i).x += (user.x - wordVector.get(i).x) / Math.abs(user.y - wordVector.get(i).y);
+                        wordVector.get(i).x += (user.x - wordVector.get(i).x) * wordVector.get(i).speed / Math.abs(user.y - wordVector.get(i).y);
                     }
 
                     if ((wordVector.get(i).x <= user.x - 15 && wordVector.get(i).x >= user.x + 15) || wordVector.get(i).y >= user.y) {
@@ -84,7 +84,7 @@ public class WordGame extends JFrame {
 
             for (Word item : wordVector) {
                 if (item.word.equals(text)) {
-                    if (!item.item.equals("Life") && user.life < 3) {
+                    if (item.item.equals("Life") && user.life < 3) {
                         user.life++;
                     }
                     item.word = "";
@@ -110,13 +110,19 @@ class Word {
         this.word = word;
         this.x = x;
         this.y = y;
-        this.item = Math.random() > 0.1 ? "Life" : "None";
+
+        int randItem = (int) (Math.random() * 100) + 1;
+        if (randItem >= 1 && randItem <= 10) this.item = "Life";
+        else if (randItem > 10 && randItem <= 20) this.item = "Slow";
+        else this.item = "None";
+
         this.speed = (int) (Math.random() * 4) + 1;
     }
 
     public void draw(Graphics g) {
-        if (item.equals("None")) g.setColor(Color.GREEN);
-        else g.setColor(Color.BLACK);
+        if (item.equals("None")) g.setColor(Color.BLACK);
+        else if (item.equals("Life")) g.setColor(Color.GREEN);
+        else if (item.equals("Slow")) g.setColor(Color.BLUE);
         g.drawString(word, x, y);
     }
 }
@@ -139,7 +145,7 @@ class UserCharacter {
 
         g.setColor(Color.RED);
         for (int i = 0; i < life; i++) {
-            g.fillOval(x + (i < (life / 2) ? -1 * 20 * i : 20 * i) - 15, y + 50, 15, 15);
+            g.fillOval(x + (i < (life / 2) ? -1 * 20 * i : 20 * i) - 13, y + 50, 15, 15);
         }
     }
 }
