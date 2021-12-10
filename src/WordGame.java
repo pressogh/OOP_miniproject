@@ -5,6 +5,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.*;
 import java.util.Vector;
 
 public class WordGame extends JFrame {
@@ -31,14 +32,7 @@ public class WordGame extends JFrame {
         sp.setPreferredSize(new Dimension(200, 500));
         c.add(sp, BorderLayout.EAST);
 
-        wordVector.add(new Word("Hello", (int) (Math.random() * 600), (int) (Math.random() * 100)));
-        wordVector.add(new Word("World", (int) (Math.random() * 600), (int) (Math.random() * 100)));
-        wordVector.add(new Word("Java", (int) (Math.random() * 600), (int) (Math.random() * 100)));
-        wordVector.add(new Word("C++", (int) (Math.random() * 600), (int) (Math.random() * 100)));
-        wordVector.add(new Word("Python", (int) (Math.random() * 600), (int) (Math.random() * 100)));
-        wordVector.add(new Word("Javascript", (int) (Math.random() * 600), (int) (Math.random() * 100)));
-        wordVector.add(new Word("OOP", (int) (Math.random() * 600), (int) (Math.random() * 100)));
-        wordVector.add(new Word("PP", (int) (Math.random() * 600), (int) (Math.random() * 100)));
+        loadDataFromFile("words.txt");
 
         WordMoveThread wmt = new WordMoveThread();
         wmt.start();
@@ -50,9 +44,8 @@ public class WordGame extends JFrame {
             super.paintComponent(g);
 
             user.draw(g);
-            for (Word item : wordVector) {
-                item.draw(g);
-            }
+            // for (Word item : wordVector) 이런식으로 하면 오류 발생
+            for (int i = 0; i < wordVector.size(); i++) wordVector.get(i).draw(g);
             repaint();
         }
     }
@@ -130,8 +123,47 @@ public class WordGame extends JFrame {
             }
 
             for (int item : deletedIndex) wordVector.remove(item);
-            System.out.println("Life " + user.life);
+            System.out.println("Word " + wordVector.size());
             jtf.setText("");
+        }
+    }
+
+    public static void saveDataToFile(Vector<Word> data, String fileName)  {
+        // FileWriter을 이용해 data에 있는 데이터 저장
+        FileWriter out;
+        try {
+            out = new FileWriter(fileName);
+            for (Word item : data) {
+                out.write(item.word + "\n");
+            }
+            out.close();
+        } catch (IOException e) {
+            System.out.println("FileWrite Error!!");
+        }
+    }
+    public void loadDataFromFile(String fileName) {
+        // BufferedReader을 이용해 파일에서 문자열을 한줄씩 읽어옴
+        BufferedReader in;
+        Vector<String> res = new Vector<>();
+        try {
+            in = new BufferedReader(new FileReader(fileName));
+            String s;
+
+            while ((s = in.readLine()) != null) {
+                res.add(s);
+            }
+            in.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("No File Error!!");
+        } catch (IOException e) {
+            System.out.println("FileRead Error!!");
+        }
+
+        int cnt = 0;
+        for (String item : res) {
+            wordVector.add(new Word(item, (int) (Math.random() * 600), (int) (Math.random() * 100)));
+            if (cnt >= 10) break;
+            cnt++;
         }
     }
 
