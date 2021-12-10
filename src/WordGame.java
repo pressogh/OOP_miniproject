@@ -89,26 +89,26 @@ public class WordGame extends JFrame {
         @Override
         public void run() {
             while (true) {
+                Vector<Integer> deletedIndex = new Vector<>();
+
                 for (int i = 0; i < wordVector.size(); i++) {
                     wordVector.get(i).y += wordVector.get(i).speed;
 
                     if (Math.abs(user.y - wordVector.get(i).y) > 0) {
                         wordVector.get(i).x += (user.x - wordVector.get(i).x) * wordVector.get(i).speed / Math.abs(user.y - wordVector.get(i).y);
                     }
-
                     if ((wordVector.get(i).x <= user.x - 15 && wordVector.get(i).x >= user.x + 15) || wordVector.get(i).y >= user.y) {
-                        // wordVector에서 item을 remove하면 word가 이동하는 속도가 바뀌게 됨
-                        // 따라서 wordVector에서 item을 삭제하지 않는 방법으로 변경
-                        if (wordVector.get(i).word.equals("")) continue;
-
-                        wordVector.get(i).word = "";
+                        deletedIndex.add(i);
                         user.life--;
                     }
-                    try {
-                        sleep(10);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                }
+
+                for (int item : deletedIndex) wordVector.remove(item);
+
+                try {
+                    sleep(80);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         }
@@ -118,15 +118,18 @@ public class WordGame extends JFrame {
         @Override
         public void actionPerformed(ActionEvent e) {
             String text = jtf.getText();
+            Vector<Integer> deletedIndex = new Vector<>();
 
-            for (Word item : wordVector) {
-                if (item.word.equals(text)) {
-                    if (item.item.equals("Life") && user.life < 3) {
+            for (int i = 0; i < wordVector.size(); i++) {
+                if (wordVector.get(i).word.equals(text)) {
+                    if (wordVector.get(i).item.equals("Life") && user.life < 3) {
                         user.life++;
                     }
-                    item.word = "";
+                    deletedIndex.add(i);
                 }
             }
+
+            for (int item : deletedIndex) wordVector.remove(item);
             System.out.println("Life " + user.life);
             jtf.setText("");
         }
