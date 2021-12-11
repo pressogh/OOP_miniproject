@@ -40,6 +40,8 @@ public class WordGame extends JFrame {
         bmt.start();
         SlowThread st = new SlowThread();
         st.start();
+        DrawFireThread dft = new DrawFireThread();
+        dft.start();
         setVisible(true);
     }
 
@@ -47,12 +49,14 @@ public class WordGame extends JFrame {
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
 
-            if (gameData.isSlow) panel.setBackground(Color.BLUE);
-            else panel.setBackground(Color.WHITE);
-
             user.draw(g);
             for (int i = 0; i < bulletVector.size(); i++) {
                 bulletVector.get(i).draw(g);
+            }
+
+            if (gameData.drawFire) {
+                Image bulletFire = new ImageIcon("./bullet_fire.png").getImage();
+                g.drawImage(bulletFire, 290, 320, 50, 50, null);
             }
             // for (Word item : wordVector) 이런식으로 하면 오류 발생
             for (int i = 0; i < wordVector.size(); i++) wordVector.get(i).draw(g);
@@ -193,6 +197,23 @@ public class WordGame extends JFrame {
         }
     }
 
+    class DrawFireThread extends Thread {
+        @Override
+        public void run() {
+            while (true) {
+                if (!gameData.drawFire) {
+                    try {
+                        sleep(1000);
+                        gameData.drawFire = false;
+                        repaint();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+    }
+
     class TextInputListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -206,9 +227,11 @@ public class WordGame extends JFrame {
             }
 
             for (String item : deletedItem) {
-                // bullet 최초 생성
+                // bullet 생성
                 bulletVector.add(new Bullet(312, 340, item));
+                gameData.drawFire = true;
             }
+
             // 테스트
             System.out.println("Word " + wordVector.size());
             jtf.setText("");
@@ -332,11 +355,13 @@ class GameData {
     int stage;
     int speed;
     boolean isSlow;
+    boolean drawFire;
     Vector<Score> score = new Vector<>();
     public GameData() {
         stage = 1;
         speed = 100;
         isSlow = false;
+        drawFire = false;
         score.add(new Score("Total Score"));
         score.add(new Score("Word Score"));
         score.add(new Score("Life Score"));
