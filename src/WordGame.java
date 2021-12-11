@@ -172,6 +172,7 @@ public class WordGame extends JFrame {
                 // 격추된 bullet 삭제
                 for (int i = 0; i < deleteBullet.size(); i++) {
                     int deleteIndex = findTargetIndex(bulletVector.get(deleteBullet.get(i)).target);
+
                     // 아이템 기능 작동
                     if (wordVector.get(deleteIndex).item.equals("Life") && user.life < 3) {
                         user.life++;
@@ -258,9 +259,19 @@ public class WordGame extends JFrame {
             }
 
             for (String item : deletedItem) {
-                // bullet 생성
-                bulletVector.add(new Bullet(312, 340, item));
-                gameData.drawFire = true;
+                boolean flag = true;
+                for (int i = 0; i < bulletVector.size(); i++) {
+                    if (bulletVector.get(i).target.equals(item)) {
+                        flag = false;
+                        break;
+                    }
+                }
+
+                if (flag) {
+                    // bullet 생성
+                    bulletVector.add(new Bullet(312, 340, item));
+                    gameData.drawFire = true;
+                }
             }
 
             // 테스트
@@ -331,6 +342,7 @@ class Word {
         if (item.equals("None")) g.setColor(Color.BLACK);
         else if (item.equals("Life")) g.setColor(Color.GREEN);
         else if (item.equals("Slow")) g.setColor(Color.CYAN);
+        g.setFont(new Font("Gothic", Font.BOLD, 14));
         g.drawString(word, x, y);
     }
 }
