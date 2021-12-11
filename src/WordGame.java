@@ -1,6 +1,5 @@
 import javax.swing.*;
 import javax.swing.border.Border;
-import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -12,8 +11,8 @@ public class WordGame extends JFrame {
     Vector<Word> wordVector = new Vector<>();
     Vector<Bullet> bulletVector = new Vector<>();
     private GamePanel panel = new GamePanel();
-    private UserCharacter user = new UserCharacter();
     private JTextField jtf = new JTextField();
+    private UserCharacter user = new UserCharacter();
     private GameData gameData = new GameData();
 
     public WordGame () {
@@ -39,6 +38,8 @@ public class WordGame extends JFrame {
         wmt.start();
         BulletMovingThread bmt = new BulletMovingThread();
         bmt.start();
+        SlowThread st = new SlowThread();
+        st.start();
         setVisible(true);
     }
 
@@ -109,7 +110,7 @@ public class WordGame extends JFrame {
                 }
 
                 try {
-                    sleep(gameData.speed / gameData.stage);
+                    sleep(gameData.speed - gameData.stage * 10);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -149,11 +150,39 @@ public class WordGame extends JFrame {
                     if (wordVector.get(deleteIndex).item.equals("Life") && user.life < 3) {
                         user.life++;
                     }
+                    else if (wordVector.get(deleteIndex).item.equals("Slow")) gameData.isSlow = true;
                     wordVector.remove(deleteIndex);
                     bulletVector.remove(item);
                 }
                 try {
                     sleep(50);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    class SlowThread extends Thread {
+        @Override
+        public void run() {
+            int check = 0;
+            while (true) {
+                if (gameData.isSlow) {
+                    gameData.speed = 150;
+
+                    if (check >= 1500) {
+                        gameData.isSlow = false;
+                        check = 0;
+                    }
+                    check += 10;
+                }
+                else {
+                    gameData.speed = 100 - gameData.stage * 10;
+                }
+
+                try {
+                    sleep(10);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -299,10 +328,12 @@ class UserCharacter {
 class GameData {
     int stage;
     int speed;
+    boolean isSlow;
     Vector<Score> score = new Vector<>();
     public GameData() {
         stage = 1;
         speed = 100;
+        isSlow = false;
         score.add(new Score("Total Score"));
         score.add(new Score("Word Score"));
         score.add(new Score("Life Score"));
