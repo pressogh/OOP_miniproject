@@ -134,7 +134,8 @@ public class WordGame extends JFrame {
 
                     // wordVector에서 삭제할 단어의 인덱스 검색
                     int targetIndex = findTargetIndex(bulletVector.get(i).target);
-                    if (Math.abs(wordVector.get(targetIndex).y - bulletVector.get(i).y) > 0) {
+                    // 0으로 할 시 좌표가 튀는 버그가 있어 10으로 변경
+                    if (Math.abs(wordVector.get(targetIndex).y - bulletVector.get(i).y) > 10) {
                         bulletVector.get(i).x += bulletVector.get(i).weight + (wordVector.get(targetIndex).x - bulletVector.get(i).x) * 30 / Math.abs(wordVector.get(targetIndex).y - bulletVector.get(i).y);
                     }
                     if ((bulletVector.get(i).x <= wordVector.get(targetIndex).x - 100 && bulletVector.get(i).x >= wordVector.get(targetIndex).x + 100) || bulletVector.get(i).y <= wordVector.get(targetIndex).y) {
