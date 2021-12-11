@@ -9,6 +9,7 @@ import java.util.Vector;
 
 public class WordGame extends JFrame {
     Vector<Word> wordVector = new Vector<>();
+    Vector<String> tempVector;
     Vector<Bullet> bulletVector = new Vector<>();
     private GamePanel panel = new GamePanel();
     private JTextField jtf = new JTextField();
@@ -32,7 +33,7 @@ public class WordGame extends JFrame {
         sp.setPreferredSize(new Dimension(200, 500));
         c.add(sp, BorderLayout.EAST);
 
-        loadDataFromFile("words.txt");
+        tempVector = loadDataFromFile("words.txt");
 
         WordMoveThread wmt = new WordMoveThread();
         wmt.start();
@@ -42,6 +43,9 @@ public class WordGame extends JFrame {
         st.start();
         DrawFireThread dft = new DrawFireThread();
         dft.start();
+        WordAddThread wat = new WordAddThread();
+        wat.start();
+        
         setVisible(true);
     }
 
@@ -68,27 +72,37 @@ public class WordGame extends JFrame {
         public ScorePanel() {
             setBackground(Color.GRAY);
             setLayout(new FlowLayout());
-
-            Border marginStage = new EmptyBorder(100, 15, 20, 0);
-            JLabel stageLabel = new JLabel("STAGE " + gameData.stage);
-            stageLabel.setFont(new Font("Noto Sans", Font.BOLD, 20));
-            stageLabel.setBorder(marginStage);
-            add(stageLabel);
-
-            Border marginName = new EmptyBorder(0, 15, 10, 0);
-            Border marginNumber = new EmptyBorder(0, 30, 10, 15);
-            for (Score item : gameData.score) {
-                JLabel scoreNameLabel = new JLabel(item.scoreName), scoreNumberLabel = new JLabel(Integer.toString(item.scoreNumber));
-
-                scoreNameLabel.setFont(new Font("Noto Sans", Font.BOLD, 15));
-                scoreNumberLabel.setFont(new Font("Noto Sans", Font.BOLD, 15));
-
-                scoreNameLabel.setBorder(marginName);
-                scoreNumberLabel.setBorder(marginNumber);
-
-                add(scoreNameLabel);
-                add(scoreNumberLabel);
+        }
+        public void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            // Word Score 계산
+            gameData.score.get(1).scoreNumber = gameData.deletedCount * 10;
+            // Life Score 계산
+            gameData.score.get(2).scoreNumber = user.life * 100;
+            // Stage Score 계산
+            gameData.score.get(3).scoreNumber = gameData.stage * 100;
+            // Total Score 계산
+            gameData.score.get(0).scoreNumber = 0;
+            for (int i = 1; i < gameData.score.size(); i++) {
+                gameData.score.get(0).scoreNumber += gameData.score.get(i).scoreNumber;
             }
+
+            g.setFont(new Font("Gothic", Font.BOLD, 20));
+            g.drawString("STAGE", 50, 100);
+            g.drawString(Integer.toString(gameData.stage), 155, 100);
+
+            g.setFont(new Font("Gothic", Font.BOLD, 15));
+            for (int i = 0; i < gameData.score.size(); i++) {
+                g.setColor(Color.BLACK);
+                g.drawString(gameData.score.get(i).scoreName, 30, 150 + i * 50);
+            }
+
+            for (int i = 0; i < gameData.score.size(); i++) {
+                g.setColor(Color.BLACK);
+                g.drawString(gameData.score.get(i).toString(), 150, 150 + i * 50);
+            }
+
+            repaint();
         }
     }
 
@@ -152,14 +166,16 @@ public class WordGame extends JFrame {
                 }
 
                 // 격추된 bullet 삭제
-                for (int item : deleteBullet) {
-                    int deleteIndex = findTargetIndex(bulletVector.get(item).target);
+                for (int i = 0; i < deleteBullet.size(); i++) {
+                    int deleteIndex = findTargetIndex(bulletVector.get(deleteBullet.get(i)).target);
+                    // 아이템 기능 작동
                     if (wordVector.get(deleteIndex).item.equals("Life") && user.life < 3) {
                         user.life++;
                     }
                     else if (wordVector.get(deleteIndex).item.equals("Slow")) gameData.isSlow = true;
                     wordVector.remove(deleteIndex);
-                    bulletVector.remove(item);
+                    bulletVector.remove((int)deleteBullet.get(i));
+                    gameData.deletedCount++;
                 }
                 try {
                     sleep(50);
@@ -184,9 +200,7 @@ public class WordGame extends JFrame {
                     }
                     check += 10;
                 }
-                else {
-                    gameData.speed = 100 - gameData.stage * 10;
-                }
+                else gameData.speed = 100 - gameData.stage * 10;
 
                 try {
                     sleep(10);
@@ -203,12 +217,25 @@ public class WordGame extends JFrame {
             while (true) {
                 if (!gameData.drawFire) {
                     try {
-                        sleep(1000);
+                        sleep(500);
                         gameData.drawFire = false;
                         repaint();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
+                }
+            }
+        }
+    }
+
+    // 화면에 표시되는 단어의 개수를 유지시키는 스레드
+    class WordAddThread extends Thread {
+        @Override
+        public void run() {
+            while (true) {
+                if (wordVector.size() < 5 * gameData.stage) {
+                    wordVector.add(new Word(tempVector.get(0), (int)(Math.random() * 600), (int)(Math.random() * 100)));
+                    tempVector.remove(0);
                 }
             }
         }
@@ -251,7 +278,7 @@ public class WordGame extends JFrame {
             System.out.println("FileWrite Error!!");
         }
     }
-    public void loadDataFromFile(String fileName) {
+    public Vector<String> loadDataFromFile(String fileName) {
         // BufferedReader을 이용해 파일에서 문자열을 한줄씩 읽어옴
         BufferedReader in;
         Vector<String> res = new Vector<>();
@@ -269,12 +296,7 @@ public class WordGame extends JFrame {
             System.out.println("FileRead Error!!");
         }
 
-        int cnt = 0;
-        for (String item : res) {
-            if (cnt > 9) break;
-            wordVector.add(new Word(item, (int) (Math.random() * 600), (int) (Math.random() * 50)));
-            cnt++;
-        }
+        return res;
     }
 
     public static void main(String[] args) {
@@ -354,12 +376,14 @@ class UserCharacter {
 class GameData {
     int stage;
     int speed;
+    int deletedCount;
     boolean isSlow;
     boolean drawFire;
     Vector<Score> score = new Vector<>();
     public GameData() {
         stage = 1;
         speed = 100;
+        deletedCount = 0;
         isSlow = false;
         drawFire = false;
         score.add(new Score("Total Score"));
@@ -374,5 +398,8 @@ class Score {
     public Score(String scoreName) {
         this.scoreName = scoreName;
         this.scoreNumber = 0;
+    }
+    public String toString() {
+        return Integer.toString(scoreNumber);
     }
 }
