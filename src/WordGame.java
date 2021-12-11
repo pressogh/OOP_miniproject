@@ -60,7 +60,7 @@ public class WordGame extends JFrame {
 
             if (gameData.drawFire) {
                 Image bulletFire = new ImageIcon("./bullet_fire.png").getImage();
-                g.drawImage(bulletFire, 290, 320, 50, 50, null);
+                g.drawImage(bulletFire, 295, 320, 50, 50, null);
             }
             // for (Word item : wordVector) 이런식으로 하면 오류 발생
             for (int i = 0; i < wordVector.size(); i++) wordVector.get(i).draw(g);
@@ -116,11 +116,15 @@ public class WordGame extends JFrame {
                     wordVector.get(i).y += wordVector.get(i).speed;
 
                     if (Math.abs(user.y - wordVector.get(i).y) > 0) {
-                        wordVector.get(i).x += (user.x - wordVector.get(i).x) * wordVector.get(i).speed / Math.abs(user.y - wordVector.get(i).y);
+                        try {
+                            wordVector.get(i).x += (user.x - wordVector.get(i).x) * wordVector.get(i).speed / Math.abs(user.y - wordVector.get(i).y);
+                        } catch (IndexOutOfBoundsException e) {
+                            System.out.println(e);
+                        }
                     }
                     if ((wordVector.get(i).x <= user.x - 15 && wordVector.get(i).x >= user.x + 15) || wordVector.get(i).y >= user.y) {
                         deletedWord.add(wordVector.get(i).word);
-                        user.life--;
+                        user.life = user.life > 0 ? user.life - 1 : 0;
                     }
                 }
 
@@ -152,10 +156,10 @@ public class WordGame extends JFrame {
             while (true) {
                 Vector<Integer> deleteBullet = new Vector<>();
                 for (int i = 0; i < bulletVector.size(); i++) {
-                    bulletVector.get(i).y -= 10;
+                    bulletVector.get(i).y -= 5;
 
                     // wordVector에서 삭제할 단어의 인덱스 검색
-                    int targetIndex = findTargetIndex(bulletVector.get(i).target);
+                    int targetIndex = findTargetIndex(bulletVector.get(i).target) == -1 ? 0 : findTargetIndex(bulletVector.get(i).target);
                     // 0으로 할 시 좌표가 튀는 버그가 있어 10으로 변경
                     if (Math.abs(wordVector.get(targetIndex).y - bulletVector.get(i).y) > 10) {
                         bulletVector.get(i).x += bulletVector.get(i).weight + (wordVector.get(targetIndex).x - bulletVector.get(i).x) * 20 / Math.abs(wordVector.get(targetIndex).y - bulletVector.get(i).y);
@@ -355,20 +359,21 @@ class UserCharacter {
     int width, height;
     int life;
     public UserCharacter() {
-        this.x = 300;
-        this.y = 350;
-        this.width = 30;
-        this.height = 30;
+        this.x = 290;
+        this.y = 340;
+        this.width = 60;
+        this.height = 60;
         this.life = 3;
     }
 
     public void draw(Graphics g) {
         Image heart = new ImageIcon("./heart.png").getImage();
         g.setColor(Color.BLACK);
-        g.fillOval(x, y, width, height);
 
+        Image spaceship = new ImageIcon("./spaceship.png").getImage();
+        g.drawImage(spaceship, x, y, width, height, null);
         for (int i = 0; i < life; i++) {
-            g.drawImage(heart, x + (i < (life / 2) ? -1 * 30 * i : 30 * i) - 25, y + 50, 20, 20, null);
+            g.drawImage(heart, x + (i < (life / 2) ? -1 * 30 * i : 30 * i) - 10, y + 60, 20, 20, null);
         }
     }
 }
