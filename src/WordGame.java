@@ -47,6 +47,9 @@ public class WordGame extends JFrame {
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
 
+            if (gameData.isSlow) panel.setBackground(Color.BLUE);
+            else panel.setBackground(Color.WHITE);
+
             user.draw(g);
             for (int i = 0; i < bulletVector.size(); i++) {
                 bulletVector.get(i).draw(g);
@@ -291,14 +294,14 @@ class Bullet {
         this.x = x;
         this.y = y;
         this.target = target;
-        width = 5;
-        height = 5;
+        width = 8;
+        height = 8;
         weight = ((int)(Math.random() * 2) > 0.5 ? -1 : 1) * 10;
     }
 
     public void draw(Graphics g) {
         g.setColor(Color.RED);
-        g.drawOval(x, y, width, height);
+        g.fillOval(x, y, width, height);
     }
 }
 
@@ -315,12 +318,12 @@ class UserCharacter {
     }
 
     public void draw(Graphics g) {
+        Image heart = new ImageIcon("./heart.png").getImage();
         g.setColor(Color.BLACK);
         g.fillOval(x, y, width, height);
 
-        g.setColor(Color.RED);
         for (int i = 0; i < life; i++) {
-            g.fillOval(x + (i < (life / 2) ? -1 * 20 * i : 20 * i) - 13, y + 50, 15, 15);
+            g.drawImage(heart, x + (i < (life / 2) ? -1 * 30 * i : 30 * i) - 25, y + 50, 20, 20, null);
         }
     }
 }
