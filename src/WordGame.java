@@ -10,6 +10,7 @@ import java.util.Vector;
 
 public class WordGame extends JFrame {
     Vector<Word> wordVector = new Vector<>();
+    Vector<Bullet> bulletVector = new Vector<>();
     private GamePanel panel = new GamePanel();
     private UserCharacter user = new UserCharacter();
     private JTextField jtf = new JTextField();
@@ -36,6 +37,8 @@ public class WordGame extends JFrame {
 
         WordMoveThread wmt = new WordMoveThread();
         wmt.start();
+        BulletMovingThread bmt = new BulletMovingThread();
+        bmt.start();
         setVisible(true);
     }
 
@@ -44,6 +47,9 @@ public class WordGame extends JFrame {
             super.paintComponent(g);
 
             user.draw(g);
+            for (int i = 0; i < bulletVector.size(); i++) {
+                bulletVector.get(i).draw(g);
+            }
             // for (Word item : wordVector) 이런식으로 하면 오류 발생
             for (int i = 0; i < wordVector.size(); i++) wordVector.get(i).draw(g);
             repaint();
@@ -82,7 +88,7 @@ public class WordGame extends JFrame {
         @Override
         public void run() {
             while (true) {
-                Vector<Integer> deletedIndex = new Vector<>();
+                Vector<String> deletedWord = new Vector<>();
 
                 for (int i = 0; i < wordVector.size(); i++) {
                     wordVector.get(i).y += wordVector.get(i).speed;
@@ -91,15 +97,59 @@ public class WordGame extends JFrame {
                         wordVector.get(i).x += (user.x - wordVector.get(i).x) * wordVector.get(i).speed / Math.abs(user.y - wordVector.get(i).y);
                     }
                     if ((wordVector.get(i).x <= user.x - 15 && wordVector.get(i).x >= user.x + 15) || wordVector.get(i).y >= user.y) {
-                        deletedIndex.add(i);
+                        deletedWord.add(wordVector.get(i).word);
                         user.life--;
                     }
                 }
 
-                for (int item : deletedIndex) wordVector.remove(item);
+                // 유저 캐릭터에 몬스터 피격 시 몬스터 제거
+                for (int i = 0; i < deletedWord.size(); i++) {
+                    int idx = findTargetIndex(deletedWord.get(i));
+                    wordVector.remove(idx);
+                }
 
                 try {
-                    sleep(80);
+                    sleep(gameData.speed / gameData.stage);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private int findTargetIndex(String target) {
+        for (int i = 0; i < wordVector.size(); i++) {
+            if (target.equals(wordVector.get(i).word)) return i;
+        }
+        return -1;
+    }
+
+    class BulletMovingThread extends Thread {
+        @Override
+        public void run() {
+            while (true) {
+                Vector<Integer> deleteBullet = new Vector<>();
+                for (int i = 0; i < bulletVector.size(); i++) {
+                    bulletVector.get(i).y -= 10;
+
+                    // wordVector에서 삭제할 단어의 인덱스 검색
+                    int targetIndex = findTargetIndex(bulletVector.get(i).target);
+                    if (Math.abs(wordVector.get(targetIndex).y - bulletVector.get(i).y) > 0) {
+                        bulletVector.get(i).x += bulletVector.get(i).weight + (wordVector.get(targetIndex).x - bulletVector.get(i).x) * 30 / Math.abs(wordVector.get(targetIndex).y - bulletVector.get(i).y);
+                    }
+                    if ((bulletVector.get(i).x <= wordVector.get(targetIndex).x - 100 && bulletVector.get(i).x >= wordVector.get(targetIndex).x + 100) || bulletVector.get(i).y <= wordVector.get(targetIndex).y) {
+                        deleteBullet.add(i);
+                    }
+                }
+
+                // 격추된 bullet 삭제
+                for (int item : deleteBullet) {
+                    int deleteIndex = findTargetIndex(bulletVector.get(item).target);
+                    wordVector.remove(deleteIndex);
+                    bulletVector.remove(item);
+                }
+                try {
+                    sleep(50);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -111,18 +161,22 @@ public class WordGame extends JFrame {
         @Override
         public void actionPerformed(ActionEvent e) {
             String text = jtf.getText();
-            Vector<Integer> deletedIndex = new Vector<>();
+            Vector<String> deletedItem = new Vector<>();
 
+            // 유저 캐릭터에 몬스터 피격 시 생명 감소
             for (int i = 0; i < wordVector.size(); i++) {
                 if (wordVector.get(i).word.equals(text)) {
                     if (wordVector.get(i).item.equals("Life") && user.life < 3) {
                         user.life++;
                     }
-                    deletedIndex.add(i);
+                    deletedItem.add(text);
                 }
             }
 
-            for (int item : deletedIndex) wordVector.remove(item);
+            for (String item : deletedItem) {
+                bulletVector.add(new Bullet(312, 340, item));
+            }
+            // 테스트
             System.out.println("Word " + wordVector.size());
             jtf.setText("");
         }
@@ -161,8 +215,8 @@ public class WordGame extends JFrame {
 
         int cnt = 0;
         for (String item : res) {
-            wordVector.add(new Word(item, (int) (Math.random() * 600), (int) (Math.random() * 100)));
-            if (cnt >= 10) break;
+            if (cnt > 9) break;
+            wordVector.add(new Word(item, (int) (Math.random() * 600), (int) (Math.random() * 50)));
             cnt++;
         }
     }
@@ -198,6 +252,25 @@ class Word {
         g.drawString(word, x, y);
     }
 }
+class Bullet {
+    int x, y;
+    int width, height;
+    int weight;
+    String target;
+    public Bullet(int x, int y, String target) {
+        this.x = x;
+        this.y = y;
+        this.target = target;
+        width = 5;
+        height = 5;
+        weight = ((int)(Math.random() * 2) > 0.5 ? -1 : 1) * 10;
+    }
+
+    public void draw(Graphics g) {
+        g.setColor(Color.RED);
+        g.drawOval(x, y, width, height);
+    }
+}
 
 class UserCharacter {
     int x, y;
@@ -224,14 +297,15 @@ class UserCharacter {
 
 class GameData {
     int stage;
+    int speed;
     Vector<Score> score = new Vector<>();
     public GameData() {
         stage = 1;
+        speed = 100;
         score.add(new Score("Total Score"));
         score.add(new Score("Word Score"));
         score.add(new Score("Life Score"));
         score.add(new Score("Stage Bonus"));
-
     }
 }
 class Score {
