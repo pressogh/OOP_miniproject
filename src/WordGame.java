@@ -136,7 +136,7 @@ public class WordGame extends JFrame {
                     int targetIndex = findTargetIndex(bulletVector.get(i).target);
                     // 0으로 할 시 좌표가 튀는 버그가 있어 10으로 변경
                     if (Math.abs(wordVector.get(targetIndex).y - bulletVector.get(i).y) > 10) {
-                        bulletVector.get(i).x += bulletVector.get(i).weight + (wordVector.get(targetIndex).x - bulletVector.get(i).x) * 30 / Math.abs(wordVector.get(targetIndex).y - bulletVector.get(i).y);
+                        bulletVector.get(i).x += bulletVector.get(i).weight + (wordVector.get(targetIndex).x - bulletVector.get(i).x) * 20 / Math.abs(wordVector.get(targetIndex).y - bulletVector.get(i).y);
                     }
                     if ((bulletVector.get(i).x <= wordVector.get(targetIndex).x - 100 && bulletVector.get(i).x >= wordVector.get(targetIndex).x + 100) || bulletVector.get(i).y <= wordVector.get(targetIndex).y) {
                         deleteBullet.add(i);
@@ -146,6 +146,9 @@ public class WordGame extends JFrame {
                 // 격추된 bullet 삭제
                 for (int item : deleteBullet) {
                     int deleteIndex = findTargetIndex(bulletVector.get(item).target);
+                    if (wordVector.get(deleteIndex).item.equals("Life") && user.life < 3) {
+                        user.life++;
+                    }
                     wordVector.remove(deleteIndex);
                     bulletVector.remove(item);
                 }
@@ -164,17 +167,14 @@ public class WordGame extends JFrame {
             String text = jtf.getText();
             Vector<String> deletedItem = new Vector<>();
 
-            // 유저 캐릭터에 몬스터 피격 시 생명 감소
             for (int i = 0; i < wordVector.size(); i++) {
                 if (wordVector.get(i).word.equals(text)) {
-                    if (wordVector.get(i).item.equals("Life") && user.life < 3) {
-                        user.life++;
-                    }
                     deletedItem.add(text);
                 }
             }
 
             for (String item : deletedItem) {
+                // bullet 최초 생성
                 bulletVector.add(new Bullet(312, 340, item));
             }
             // 테스트
