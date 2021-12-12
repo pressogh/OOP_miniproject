@@ -1,11 +1,11 @@
 import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.util.Vector;
+
+import static java.lang.Thread.sleep;
 
 public class WordGame extends JFrame {
     Vector<Word> wordVector = new Vector<>();
@@ -15,6 +15,7 @@ public class WordGame extends JFrame {
     private JTextField jtf = new JTextField();
     private UserCharacter user = new UserCharacter();
     private GameData gameData = new GameData();
+    private Boss boss = new Boss();
 
     public WordGame () {
         setTitle("WordGame");
@@ -54,6 +55,8 @@ public class WordGame extends JFrame {
             super.paintComponent(g);
 
             user.draw(g);
+            boss.draw(g);
+
             for (int i = 0; i < bulletVector.size(); i++) {
                 bulletVector.get(i).draw(g);
             }
@@ -76,7 +79,7 @@ public class WordGame extends JFrame {
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
             // Word Score 계산
-            gameData.score.get(1).scoreNumber = gameData.deletedCount * 10;
+            gameData.score.get(1).scoreNumber = gameData.totalDeletedCount * 10;
             // Life Score 계산
             gameData.score.get(2).scoreNumber = user.life * 100;
             // Stage Score 계산
@@ -150,47 +153,137 @@ public class WordGame extends JFrame {
         return -1;
     }
 
-    class BulletMovingThread extends Thread {
+    class BossThread extends Thread {
         @Override
         public void run() {
             while (true) {
-                Vector<Integer> deleteBullet = new Vector<>();
-                for (int i = 0; i < bulletVector.size(); i++) {
-                    bulletVector.get(i).y -= 5;
+                if (gameData.isBoss) {
+                    for (int j = -180; j < boss.posY; j += 3) {
+                        boss.y = j;
+                        try {
+                            sleep(100);
+                        } catch (InterruptedException e) {
+                            System.out.println("Boss Interrupted!!");
+                        }
+                    }
 
-                    // wordVector에서 삭제할 단어의 인덱스 검색
-                    int targetIndex = findTargetIndex(bulletVector.get(i).target) == -1 ? 0 : findTargetIndex(bulletVector.get(i).target);
-                    // 0으로 할 시 좌표가 튀는 버그가 있어 10으로 변경
-                    if (Math.abs(wordVector.get(targetIndex).y - bulletVector.get(i).y) > 10) {
-                        bulletVector.get(i).x += bulletVector.get(i).weight + (wordVector.get(targetIndex).x - bulletVector.get(i).x) * 20 / Math.abs(wordVector.get(targetIndex).y - bulletVector.get(i).y);
+                    while (boss.life > 0) {
+                        wordVector.add(new Word(tempVector.get(0), (int) (Math.random() * 600), 200));
+                        tempVector.remove(0);
+                        try {
+                            sleep(1000);
+                        } catch (InterruptedException e) {
+                            System.out.println("Boss Interrupted!!");
+                        }
                     }
-                    if ((bulletVector.get(i).x <= wordVector.get(targetIndex).x - 100 && bulletVector.get(i).x >= wordVector.get(targetIndex).x + 100) || bulletVector.get(i).y <= wordVector.get(targetIndex).y) {
-                        deleteBullet.add(i);
-                    }
+                    gameData.isBoss = false;
                 }
+                else {
+                    gameData.isBossMoving = true;
 
-                // 격추된 bullet 삭제
-                for (int i = 0; i < deleteBullet.size(); i++) {
-                    int deleteIndex = findTargetIndex(bulletVector.get(deleteBullet.get(i)).target);
-
-                    // 아이템 기능 작동
-                    if (wordVector.get(deleteIndex).item.equals("Life") && user.life < 3) {
-                        user.life++;
+                    while (true) {
+                        if (bulletVector.size() <= 0) break;
+                        bulletVector.remove(0);
                     }
-                    else if (wordVector.get(deleteIndex).item.equals("Slow")) gameData.isSlow = true;
-                    wordVector.remove(deleteIndex);
-                    bulletVector.remove((int)deleteBullet.get(i));
-                    gameData.deletedCount++;
-                }
-                try {
-                    sleep(50);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    while (true) {
+                        if (wordVector.size() <= 0) break;
+                        wordVector.remove(0);
+                    }
+
+                    for (int j = boss.posY; j >= -180; j -= 3) {
+                        boss.y = j;
+                        try {
+                            sleep(100);
+                        } catch (InterruptedException e) {
+                            System.out.println("Boss Interrupted!!");
+                        }
+                    }
+                    System.out.println("Thread Finished!! " + gameData.isBoss);
+                    gameData.isBossMoving = false;
+                    gameData.stage++;
+                    boss.life = 100;
+                    break;
                 }
             }
         }
     }
 
+    // 총알을 움직이게 해주는 스레드
+    class BulletMovingThread extends Thread {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    Vector<Integer> deleteBullet = new Vector<>();
+                    for (int i = 0; i < bulletVector.size(); i++) {
+                        bulletVector.get(i).y -= 5;
+
+                        // wordVector에서 삭제할 단어의 인덱스 검색
+                        int targetIndex = findTargetIndex(bulletVector.get(i).target) == -1 ? 0 : findTargetIndex(bulletVector.get(i).target);
+                        // 0으로 할 시 좌표가 튀는 버그가 있어 10으로 변경
+                        if (Math.abs(wordVector.get(targetIndex).y - bulletVector.get(i).y) > 5) {
+                            bulletVector.get(i).x += bulletVector.get(i).weight + (wordVector.get(targetIndex).x - bulletVector.get(i).x) * 20 / Math.abs(wordVector.get(targetIndex).y - bulletVector.get(i).y);
+                        }
+                        if ((bulletVector.get(i).x <= wordVector.get(targetIndex).x - 100 && bulletVector.get(i).x >= wordVector.get(targetIndex).x + 100) || bulletVector.get(i).y <= wordVector.get(targetIndex).y) {
+                            deleteBullet.add(i);
+                        }
+                    }
+
+                    // 격추된 bullet 삭제
+                    for (int i = 0; i < deleteBullet.size(); i++) {
+                        int deleteIndex;
+                        deleteIndex = findTargetIndex(bulletVector.get(deleteBullet.get(i)).target);
+                        if (deleteIndex == -1) {
+                            bulletVector.remove((int) deleteBullet.get(i));
+                            System.out.println("11231434");
+                            continue;
+                        }
+
+                        // 아이템 기능 작동
+                        if (wordVector.get(deleteIndex).item.equals("Life") && user.life < 5) {
+                            user.life++;
+                        } else if (wordVector.get(deleteIndex).item.equals("Slow")) gameData.isSlow = true;
+                        wordVector.remove(deleteIndex);
+                        bulletVector.remove((int) deleteBullet.get(i));
+
+                        if (!gameData.isBoss && !gameData.isBossMoving) {
+                            gameData.totalDeletedCount++;
+                            gameData.deletedCount++;
+                        }
+                        if (gameData.isBoss) boss.life = boss.life > 0 ? boss.life - 20 : 0;
+
+                        // 지워진 단어의 개수가 15개 이상이면 boss 등장
+                        if (gameData.deletedCount % 3 == 0 && !gameData.isBoss) {
+                            gameData.deletedCount = 0;
+                            gameData.isBoss = true;
+                            BossThread bt = new BossThread();
+                            bt.start();
+                            while (true) {
+                                if (bulletVector.size() <= 0) break;
+                                bulletVector.remove(0);
+                            }
+                            while (true) {
+                                if (wordVector.size() <= 0) break;
+                                wordVector.remove(0);
+                            }
+                        }
+                    }
+                    try {
+                        sleep(50);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } catch (Exception e) {
+                    while (true) {
+                        if (bulletVector.size() <= 0) break;
+                        bulletVector.remove(0);
+                    }
+                }
+            }
+        }
+    }
+
+    // Slow 아이템의 기능 스레드
     class SlowThread extends Thread {
         @Override
         public void run() {
@@ -205,7 +298,8 @@ public class WordGame extends JFrame {
                     }
                     check += 10;
                 }
-                else gameData.speed = 100 - gameData.stage * 10;
+                // gameData.speed = 100 - gameData.stage * 10 로 하면 너무 어려움
+                else gameData.speed = 100;
 
                 try {
                     sleep(10);
@@ -216,6 +310,7 @@ public class WordGame extends JFrame {
         }
     }
 
+    // 우주선에서 발사되는 총알의 불꽃을 표시해주는 스레드
     class DrawFireThread extends Thread {
         @Override
         public void run() {
@@ -238,9 +333,13 @@ public class WordGame extends JFrame {
         @Override
         public void run() {
             while (true) {
-                if (wordVector.size() < 5 * gameData.stage) {
-                    wordVector.add(new Word(tempVector.get(0), (int)(Math.random() * 600), (int)(Math.random() * 100)));
-                    tempVector.remove(0);
+
+                System.out.println("Running"); // 이거 없으면 오류
+                if (!gameData.isBoss && !gameData.isBossMoving) {
+                    if (wordVector.size() < gameData.stage + 3) {
+                        wordVector.add(new Word(tempVector.get(0), (int) (Math.random() * 600), (int) (Math.random() * 100)));
+                        tempVector.remove(0);
+                    }
                 }
             }
         }
@@ -259,6 +358,7 @@ public class WordGame extends JFrame {
             }
 
             for (String item : deletedItem) {
+                // 같은 단어를 연속적으로 입력 시 발생하는 오류 해결
                 boolean flag = true;
                 for (int i = 0; i < bulletVector.size(); i++) {
                     if (bulletVector.get(i).target.equals(item)) {
@@ -276,6 +376,8 @@ public class WordGame extends JFrame {
 
             // 테스트
             System.out.println("Word " + wordVector.size());
+            System.out.println("IsBossMoving " + gameData.isBossMoving);
+            System.out.println("IsBoss " + gameData.isBoss);
             jtf.setText("");
         }
     }
@@ -365,7 +467,6 @@ class Bullet {
         g.fillOval(x, y, width, height);
     }
 }
-
 class UserCharacter {
     int x, y;
     int width, height;
@@ -380,29 +481,56 @@ class UserCharacter {
 
     public void draw(Graphics g) {
         Image heart = new ImageIcon("./heart.png").getImage();
-        g.setColor(Color.BLACK);
-
         Image spaceship = new ImageIcon("./spaceship.png").getImage();
+
         g.drawImage(spaceship, x, y, width, height, null);
         for (int i = 0; i < life; i++) {
             g.drawImage(heart, x + (i < (life / 2) ? -1 * 30 * i : 30 * i) - 10, y + 60, 20, 20, null);
         }
     }
 }
+class Boss {
+    int x, y;
+    int width, height;
+    int life;
+    int posY = 40;
+    public Boss() {
+        this.x = 250;
+        this.y = -180;
+        this.width = 120;
+        this.height = 120;
+        this.life = 100;
+    }
 
+    public void draw(Graphics g) {
+        Image heart = new ImageIcon("./heart.png").getImage();
+        Image spaceship = new ImageIcon("./Boss.png").getImage();
+
+        g.drawImage(spaceship, x, y, width, height, null);
+        g.setColor(Color.BLACK);
+        g.fillRect(x - 40, y - 30, 200, 20);
+        g.setColor(Color.RED);
+        g.fillRect(x - 40, y - 30, life * 2, 20);
+    }
+}
 class GameData {
     int stage;
     int speed;
-    int deletedCount;
+    int deletedCount, totalDeletedCount;
     boolean isSlow;
+    boolean isBoss;
     boolean drawFire;
+    boolean isBossMoving;
     Vector<Score> score = new Vector<>();
     public GameData() {
         stage = 1;
         speed = 100;
         deletedCount = 0;
+        totalDeletedCount = 0;
         isSlow = false;
+        isBoss = false;
         drawFire = false;
+        isBossMoving = false;
         score.add(new Score("Total Score"));
         score.add(new Score("Word Score"));
         score.add(new Score("Life Score"));
