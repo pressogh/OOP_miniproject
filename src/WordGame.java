@@ -248,10 +248,9 @@ public class WordGame extends JFrame {
                         bulletVector.remove((int) deleteBullet.get(i));
 
 
-                        if (!gameData.isBoss && !gameData.isBossMoving) {
-                            gameData.totalDeletedCount++;
-                            gameData.deletedCount++;
-                        }
+                        if (!gameData.isBoss && !gameData.isBossMoving) gameData.deletedCount++;
+                        if (!gameData.isBossMoving) gameData.totalDeletedCount++;
+
                         if (gameData.isBoss) boss.life = boss.life > 0 ? boss.life - 20 : 0;
 
                         // 지워진 단어의 개수가 15개 이상이면 boss 등장
