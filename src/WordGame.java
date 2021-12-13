@@ -1,13 +1,320 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.util.Collections;
 import java.io.*;
 import java.util.Comparator;
 import java.util.Vector;
 
+class StartPanel extends JFrame {
+
+    public StartPanel() {
+        setTitle("WordGame");
+        setSize(800, 600);
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        Container c = getContentPane();
+        c.add(new MyPanel());
+
+        addKeyListener(new EnterKeyListener());
+
+        requestFocus();
+        setVisible(true);
+    }
+
+    public class MyPanel extends JPanel {
+        private ImageIcon icon = new ImageIcon("./plane.png");
+        private Image img = icon.getImage(); // 이미지 객체
+        public MyPanel() {
+            setLayout(new GridLayout(14, 1, 1, 1));
+            Vector<JLabel> borderVector = new Vector<>();
+            for (int i = 0; i < 9; i++) {
+                JLabel temp = new JLabel("                                                                 ");
+                temp.setFont(new Font("Gothic", Font.BOLD, 30));
+                borderVector.add(temp);
+                add(borderVector.get(i));
+            }
+
+            JLabel pe = new JLabel("PRESS ENTER TO START GAME");
+            pe.setFont(new Font("Gothic", Font.BOLD, 30));
+            pe.setForeground(Color.BLACK);
+            add(pe);
+
+            JLabel aw = new JLabel("PRESS A TO ADD WORD");
+            aw.setFont(new Font("Gothic", Font.BOLD, 30));
+            aw.setForeground(Color.BLACK);
+            add(aw);
+
+            JLabel rw = new JLabel("PRESS R TO SEE RANK");
+            rw.setFont(new Font("Gothic", Font.BOLD, 30));
+            rw.setForeground(Color.BLACK);
+            add(rw);
+        }
+        public void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            g.drawImage(img, 0, 0, getWidth(), getHeight(), this);
+            System.out.println("fjeioajfe");
+        }
+    }
+
+    class EnterKeyListener extends KeyAdapter {
+        @Override
+        public void keyPressed(KeyEvent e) {
+            int key = e.getKeyCode();
+            switch (key) {
+                case KeyEvent.VK_ENTER:
+                    setVisible(false);
+                    new GetUserNamePanel();
+                    break;
+                case KeyEvent.VK_A:
+                    setVisible(false);
+                    new AddPanel();
+                    break;
+                case KeyEvent.VK_R:
+                    setVisible(false);
+                    try {
+                        new RankPanel();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                    break;
+            }
+        }
+    }
+}
+class GetUserNamePanel extends JFrame {
+    private JTextField jtf = new JTextField();
+    public GetUserNamePanel() {
+        setTitle("WordGame");
+        setSize(800, 500);
+        setLayout(new FlowLayout());
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        Vector<JLabel> borderVector = new Vector<>();
+        for (int i = 0; i < 4; i++) {
+            JLabel temp = new JLabel("                                                                 ");
+            temp.setFont(new Font("Gothic", Font.BOLD, 30));
+            borderVector.add(temp);
+            add(borderVector.get(i));
+        }
+
+        JLabel pe = new JLabel("ENTER USERNAME");
+        pe.setFont(new Font("Gothic", Font.BOLD, 30));
+        add(pe);
+
+        jtf.setPreferredSize(new Dimension(700, 30));
+        jtf.addActionListener(new UserNameListener());
+        add(jtf);
+
+        requestFocus();
+        setVisible(true);
+    }
+
+    class UserNameListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            String text = jtf.getText();
+            if (!text.equals("")) {
+                setVisible(false);
+                new WordGame(text);
+            }
+        }
+    }
+}
+class AddPanel extends JFrame {
+    private JTextField jtf = new JTextField();
+    private JLabel newText;
+    public AddPanel() {
+        setTitle("WordGame");
+        setSize(800, 500);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        JLabel informationButton = new JLabel("INPUT WORD AND PRESS ENTER");
+        informationButton.setFont(new Font("Gothic", Font.BOLD, 30));
+        informationButton.setBounds(150, 80, 800, 40);
+        add(informationButton);
+
+        jtf.setPreferredSize(new Dimension(700, 30));
+        jtf.addActionListener(new TextInputListener());
+        jtf.setBounds(50, 180, 700, 30);
+        add(jtf);
+
+        JButton jb = new JButton("Go Back");
+        jb.setBounds(350, 350, 100, 50);
+        jb.addActionListener(new GoBackListener());
+        add(jb);
+
+        newText = new JLabel("");
+        newText.setFont(new Font("Gothic", Font.BOLD, 30));
+        add(newText);
+
+        requestFocus();
+        setVisible(true);
+    }
+
+    class TextInputListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            String text = jtf.getText();
+
+            if (!text.equals("")) {
+                newText.setText("       " + text + " added!!");
+                BufferedWriter out;
+                try {
+                    out = new BufferedWriter(new FileWriter("./words.txt", true));
+                    out.write("\n" + text);
+                    out.close();
+                } catch (IOException ioe) {
+                    System.out.println("FileWrite Error!!");
+                }
+            }
+
+            jtf.setText("");
+        }
+    }
+
+    class GoBackListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            setVisible(false);
+            new StartPanel();
+        }
+    }
+}
+class GameEndPanel extends JFrame {
+    public GameEndPanel(GameData gameData) {
+        setTitle("WordGame");
+        setSize(800, 600);
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        Container c = getContentPane();
+        c.add(new MyPanel(gameData));
+
+        addKeyListener(new EnterKeyListener());
+
+        requestFocus();
+        setVisible(true);
+    }
+
+    class MyPanel extends JPanel {
+        public MyPanel(GameData gameData) {
+            setLayout(new BorderLayout());
+            JLabel ys = new JLabel("YOUR SCORE");
+            ys.setFont(new Font("Gothic", Font.BOLD, 30));
+            ys.setBounds(300, 20, 500, 30);
+            ys.setForeground(Color.RED);
+            add(ys);
+
+            JLabel n = new JLabel("Name: " + gameData.userName);
+            n.setFont(new Font("Gothic", Font.BOLD, 30));
+            n.setBounds(300, 70, 500, 30);
+            n.setForeground(Color.RED);
+            add(n);
+
+            JLabel ts = new JLabel("Total Score: " + gameData.score.get(0));
+            ts.setFont(new Font("Gothic", Font.BOLD, 30));
+            ts.setBounds(300, 120, 500, 30);
+            ts.setForeground(Color.RED);
+            add(ts);
+
+            JLabel ws = new JLabel("Word Score: " + gameData.score.get(1));
+            ws.setFont(new Font("Gothic", Font.BOLD, 30));
+            ws.setBounds(300, 170, 500, 30);
+            ws.setForeground(Color.RED);
+            add(ws);
+
+            JLabel ls = new JLabel("Life Score: " + gameData.score.get(2));
+            ls.setFont(new Font("Gothic", Font.BOLD, 30));
+            ls.setBounds(300, 220, 500, 30);
+            ls.setForeground(Color.RED);
+            add(ls);
+
+            JLabel ss = new JLabel("                                    Stage Score: " + gameData.score.get(3));
+            ss.setFont(new Font("Gothic", Font.BOLD, 30));
+            ss.setForeground(Color.RED);
+            add(ss);
+        }
+    }
+
+    class EnterKeyListener extends KeyAdapter {
+        @Override
+        public void keyPressed(KeyEvent e) {
+            int key = e.getKeyCode();
+            switch (key) {
+                case KeyEvent.VK_ESCAPE:
+                    setVisible(false);
+                    new StartPanel();
+                    break;
+            }
+        }
+    }
+}
+class RankPanel extends JFrame {
+    public RankPanel() throws IOException {
+        setTitle("WordGame");
+        setSize(800, 600);
+        setLayout(new GridLayout(7, 1, 1, 1));
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        JLabel rs = new JLabel("RANK");
+        rs.setFont(new Font("Gothic", Font.BOLD, 30));
+        add(rs);
+
+        Vector<ScoreOutput> sov = new Vector<>();
+        ObjectInputStream in = new ObjectInputStream(new FileInputStream("./score.dat"));
+        ScoreOutput s;
+        try {
+            while ((s = (ScoreOutput) in.readObject()) != null) {
+                sov.add(s);
+            }
+        } catch (Exception e) {
+            in.close();
+        }
+
+        sov.sort((p1, p2) -> {
+            if (p1.totalScore > p2.totalScore) {
+                return -1;
+            } else {
+                return 1;
+            }
+        });
+
+        JLabel dis = new JLabel("순위" + "        " + "점수" + "         " + "이름");
+        dis.setFont(new Font("Gothic", Font.BOLD, 30));
+        add(dis);
+
+
+        for (int i = 0; i < 5; i++) {
+            if (i >= sov.size()) break;
+            JLabel label = new JLabel(i + 1 + "               " + sov.get(i).totalScore + "         " + sov.get(i).name);
+            label.setFont(new Font("Gothic", Font.BOLD, 30));
+            add(label);
+        }
+
+        addKeyListener(new ESCKeyListener());
+
+        requestFocus();
+        setVisible(true);
+    }
+    class ESCKeyListener extends KeyAdapter {
+        @Override
+        public void keyPressed(KeyEvent e) {
+            int key = e.getKeyCode();
+            switch (key) {
+                case KeyEvent.VK_ESCAPE:
+                    setVisible(false);
+                    new StartPanel();
+                    break;
+            }
+        }
+    }
+}
+
 public class WordGame extends JFrame {
+    Container c;
     Vector<Word> wordVector = new Vector<>();
     Vector<String> bossWordVector = new Vector<>();
     Vector<String> tempVector;
@@ -15,16 +322,18 @@ public class WordGame extends JFrame {
     private GamePanel panel = new GamePanel();
     private JTextField jtf = new JTextField();
     private UserCharacter user = new UserCharacter();
-    private GameData gameData = new GameData();
+    private GameData gameData;
     private Boss boss = new Boss();
 
-    public WordGame () {
+    public WordGame (String userName) {
+        gameData = new GameData(userName);
         setTitle("WordGame");
         setSize(800, 500);
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        Container c =  getContentPane();
+        c = getContentPane();
 
+        // ****************************************** 화면 ******************************************
         c.add(panel, BorderLayout.CENTER);
 
         jtf.setSize(800, 30);
@@ -34,9 +343,9 @@ public class WordGame extends JFrame {
         ScorePanel sp = new ScorePanel();
         sp.setPreferredSize(new Dimension(200, 500));
         c.add(sp, BorderLayout.EAST);
-
+        // *******************************************************************************************
         tempVector = loadDataFromFile("words.txt");
-
+        // ****************************************** 쓰레드 ******************************************
         WordMoveThread wmt = new WordMoveThread();
         wmt.start();
         BulletMovingThread bmt = new BulletMovingThread();
@@ -47,7 +356,11 @@ public class WordGame extends JFrame {
         dft.start();
         WordAddThread wat = new WordAddThread();
         wat.start();
-        
+        GameEndThread get = new GameEndThread();
+        get.start();
+        // *******************************************************************************************
+
+        requestFocus();
         setVisible(true);
     }
 
@@ -202,6 +515,7 @@ public class WordGame extends JFrame {
                     System.out.println("Thread Finished!! " + gameData.isBoss);
                     gameData.isBossMoving = false;
                     gameData.stage++;
+
                     boss.life = 100;
                     break;
                 }
@@ -254,7 +568,7 @@ public class WordGame extends JFrame {
                         if (gameData.isBoss) boss.life = boss.life > 0 ? boss.life - 20 : 0;
 
                         // 지워진 단어의 개수가 15개 이상이면 boss 등장
-                        if (gameData.deletedCount % 3 == 0 && !gameData.isBoss) {
+                        if (gameData.deletedCount % (5 * gameData.stage) == 0 && !gameData.isBoss) {
                             gameData.deletedCount = 0;
                             gameData.isBoss = true;
                             BossThread bt = new BossThread();
@@ -345,6 +659,50 @@ public class WordGame extends JFrame {
         }
     }
 
+    private void gameEnd() throws IOException, ClassNotFoundException {
+        setVisible(false);
+
+        Vector<ScoreOutput> sov = new Vector<>();
+        ObjectInputStream in = new ObjectInputStream(new FileInputStream("./score.dat"));
+        ScoreOutput s;
+        try {
+            while ((s = (ScoreOutput) in.readObject()) != null) {
+                sov.add(s);
+            }
+        } catch (Exception e) {
+            in.close();
+        }
+
+        ScoreOutput so = new ScoreOutput(gameData);
+        sov.add(so);
+
+        // ObjectOutputStream을 이용하여 파일에 클래스 저장
+        ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("./score.dat"));
+        for (ScoreOutput item : sov) {
+            out.writeObject(item);
+        }
+        out.close();
+
+        new GameEndPanel(gameData);
+    }
+    // 게임 종료를 판단해주는 쓰레드
+    class GameEndThread extends Thread {
+        @Override
+        public void run() {
+            while (true) {
+                System.out.println("GameEnd");
+                if (gameData.stage >= 4 || user.life <= 0) {
+                    try {
+                        gameEnd();
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     class TextInputListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -382,19 +740,6 @@ public class WordGame extends JFrame {
         }
     }
 
-    public static void saveDataToFile(Vector<Word> data, String fileName)  {
-        // FileWriter을 이용해 data에 있는 데이터 저장
-        FileWriter out;
-        try {
-            out = new FileWriter(fileName);
-            for (Word item : data) {
-                out.write(item.word + "\n");
-            }
-            out.close();
-        } catch (IOException e) {
-            System.out.println("FileWrite Error!!");
-        }
-    }
     public Vector<String> loadDataFromFile(String fileName) {
         // BufferedReader을 이용해 파일에서 문자열을 한줄씩 읽어옴
         BufferedReader in;
@@ -424,7 +769,7 @@ public class WordGame extends JFrame {
     }
 
     public static void main(String[] args) {
-        new WordGame();
+        new StartPanel();
     }
 }
 
@@ -528,8 +873,10 @@ class GameData {
     boolean isBoss;
     boolean drawFire;
     boolean isBossMoving;
+    String userName;
     Vector<Score> score = new Vector<>();
-    public GameData() {
+    public GameData(String userName) {
+        this.userName = userName;
         stage = 1;
         speed = 100;
         deletedCount = 0;
@@ -553,5 +900,16 @@ class Score {
     }
     public String toString() {
         return Integer.toString(scoreNumber);
+    }
+}
+class ScoreOutput implements Serializable {
+    int totalScore, wordScore, lifeScore, stageScore;
+    String name;
+    public ScoreOutput(GameData g) {
+        totalScore = g.score.get(0).scoreNumber;
+        wordScore = g.score.get(1).scoreNumber;
+        lifeScore = g.score.get(2).scoreNumber;
+        stageScore = g.score.get(3).scoreNumber;
+        name = g.userName;
     }
 }
